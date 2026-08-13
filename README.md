@@ -4,6 +4,16 @@
 
     gem "best_in_place", git: "https://github.com/givecampus/best_in_place"
 
+### GiveCampus fork changes
+
+This fork carries changes that are not in `bernat/best_in_place` or `mmotherwell/best_in_place`.
+Preserve them when rebasing onto upstream or re-forking, or the bugs below come back.
+
+| Change | Why |
+| --- | --- |
+| `BestInPlace.deprecator` used in `helper.rb` instead of `ActiveSupport::Deprecation.warn` | Rails 7.2 removed the class-level delegators, so the old call resolved to private `Kernel#warn` and raised `NoMethodError` on any deprecated option key |
+| Explicit hash literals passed to `Renderer.new` in `display_methods.rb` | Ruby 3.0 separated positional and keyword arguments |
+
 ## Description
 
 **Best in Place** is a jQuery based AJAX Inplace-Editor that takes profit of RESTful server-side controllers to allow users to edit stuff with
