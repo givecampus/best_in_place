@@ -14,6 +14,28 @@ Preserve them when rebasing onto upstream or re-forking, or the bugs below come 
 | `BestInPlace.deprecator` used in `helper.rb` instead of `ActiveSupport::Deprecation.warn` | Rails 7.2 removed the class-level delegators, so the old call resolved to private `Kernel#warn` and raised `NoMethodError` on any deprecated option key |
 | Explicit hash literals passed to `Renderer.new` in `display_methods.rb` | Ruby 3.0 separated positional and keyword arguments |
 
+Pin this fork by tag rather than tracking the default branch, so the app moves deliberately:
+
+    gem "best_in_place", "3.1.2", git: "https://github.com/givecampus/best_in_place", tag: "v3.1.2"
+
+#### On upstream 4.0.0
+
+`bernat/best_in_place` was dormant from 2017 until **4.0.0 on 2024-08-15**, roughly ten weeks after
+this fork was cut. Recorded here so the comparison does not have to be redone:
+
+- Requires `actionpack`/`railties >= 7.0` and Ruby `>= 3.1`.
+- Contains **both** patches above already — it builds an `ActiveSupport::Deprecation` instance in
+  `helper.rb` rather than calling the class, and has the same braced-hash `Renderer.new` fix.
+- Also ahead on two Rails 7 items this fork lacks: `ActionView::Base.empty` in place of the 3-arg
+  `ActionView::Base.new({}, {}, "")`, and `ActiveSupport.on_load` engine hooks in place of
+  `send(:include, ...)`.
+- Migration would be low-friction: all three shipped JS files are byte-identical to this fork's,
+  asset paths are unchanged, and the helper still reads `opts[:as]`.
+
+We stay on the fork deliberately. 4.0.0 is a single release from a project revived after seven years
+dormant, with no production track record here, while this fork's contents are covered by specs in
+`spec/helper_spec.rb`. Worth revisiting once 4.x has accrued releases and adopters.
+
 ## Description
 
 **Best in Place** is a jQuery based AJAX Inplace-Editor that takes profit of RESTful server-side controllers to allow users to edit stuff with
