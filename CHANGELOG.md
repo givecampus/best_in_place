@@ -1,5 +1,5 @@
 #Changelog
-- GiveCampus fork
+- v.3.1.2 (GiveCampus fork)
   - Rails 7.2 support: warn through a gem-owned `BestInPlace.deprecator` registered as
     `app.deprecators[:best_in_place]`, replacing the class-level
     `ActiveSupport::Deprecation.warn` that Rails 7.2 removed
