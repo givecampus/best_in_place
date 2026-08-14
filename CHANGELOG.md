@@ -1,4 +1,11 @@
 #Changelog
+- v.3.1.2 (GiveCampus fork)
+  - Rails 7.2 support: warn through a gem-owned `BestInPlace.deprecator` registered as
+    `app.deprecators[:best_in_place]`, replacing the class-level
+    `ActiveSupport::Deprecation.warn` that Rails 7.2 removed
+  - Ruby 3.0 support: pass explicit hash literals to `Renderer.new` in `display_methods.rb`
+  - Test matrix narrowed to the Rails versions actually supported (>= 6.1), plus a 7.2 appraisal
+
 - v.6.1.0
 - Version set to the version of rails it matches to (given that is the usecase)
 

@@ -30,10 +30,30 @@ describe BestInPlace::Helper, type: :helper do
       expect(span).not_to be_empty
     end
 
-    it "should show deprecation warning" do
-      expect(ActiveSupport::Deprecation).to receive(:warn).with("[Best_in_place] :path is deprecated in favor of :url ")
+    def capture_deprecations
+      messages = []
+      original = BestInPlace.deprecator.behavior
+      BestInPlace.deprecator.behavior = ->(message, *) { messages << message }
+      yield
+      messages
+    ensure
+      BestInPlace.deprecator.behavior = original
+    end
 
-      helper.best_in_place @user, :name, path: "http://example.com"
+    it "should show deprecation warning" do
+      messages = capture_deprecations do
+        helper.best_in_place @user, :name, path: "http://example.com"
+      end
+
+      expect(messages.first).to include("[Best_in_place] :path is deprecated in favor of :url")
+    end
+
+    it "should show deprecation warning for the :type option" do
+      messages = capture_deprecations do
+        helper.best_in_place @user, :name, type: :input
+      end
+
+      expect(messages.first).to include("[Best_in_place] :type is deprecated in favor of :as")
     end
 
     it "should not allow both display_as and display_with option" do

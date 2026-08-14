@@ -1,11 +1,16 @@
 require 'rails/railtie'
 require 'action_view/railtie'
 require 'action_controller/railtie'
+require 'active_support/deprecation'
 
 module BestInPlace
   def self.configure
     @configuration ||= Configuration.new
     yield @configuration if block_given?
+  end
+
+  def self.deprecator
+    @deprecator ||= ActiveSupport::Deprecation.new('4.0', 'BestInPlace')
   end
 
   def self.method_missing(method_name, *args, &block)
