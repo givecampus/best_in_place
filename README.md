@@ -435,10 +435,39 @@ Fork the project on [github](https://github.com/bernat/best_in_place 'bernat / b
 
 ### Run the specs
 
-    $ appraisal
-    $ appraisal rspec
+Use Ruby 3.3 or newer and install Google Chrome for the JavaScript specs.
+The appraisal matrix covers Rails 8.0 and 8.1, constrained to patch releases
+within each minor version. The gem's Rails dependencies are bounded to
+`>= 8.0, < 8.2`; supporting a newer minor requires explicitly updating the
+gemspec and test matrix.
 
-You many need to install appraisal: `gem install appraisal`
+  $ bundle install
+  $ bundle exec appraisal generate
+  $ bundle exec appraisal install
+  $ bundle exec appraisal rspec
+
+To run one Rails version:
+
+  $ bundle exec appraisal rails-8.0 rspec
+
+### Coverage and CI
+
+SimpleCov runs before Rails and the gem load, measures Ruby line and branch
+coverage, and includes unloaded files under `lib`. Open `coverage/index.html`
+after a spec run. CircleCI uses a single job to install all appraisals and run
+`bundle exec appraisal rspec` with headless Chrome. It uploads coverage reports,
+separate JUnit results for each appraisal, Rails logs, and browser failure
+screenshots under `tmp/screenshots`. Focused examples do not restrict the suite
+in CI. Test data is cleared before each example; browser assertions wait for
+observable state instead of retrying whole examples.
+
+The coverage review added direct specs for controller success/error responses,
+custom parameter names, display renderers, and model identity utilities.
+Remaining gaps include the configuration delegation API, AJAX timeout/error
+paths in test helpers, and some helper option combinations. Existing browser
+specs exercise the JavaScript, but SimpleCov measures only Ruby; JavaScript
+line/branch coverage would require separate instrumentation. No minimum
+coverage gate is set until a passing full-suite baseline is established.
 
 ---
 

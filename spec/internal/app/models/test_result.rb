@@ -1,5 +1,5 @@
 class TestResult < ActiveRecord::Base
-  belongs_to :user
+  belongs_to :user, optional: false
 
   AVAILABLE_TESTS = %w(Meyers-Briggs Stanford-Binet SAT)
 

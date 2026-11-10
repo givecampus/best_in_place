@@ -391,7 +391,7 @@ describe "JS behaviour", :js => true do
     execute_script <<-JS
       $("##{id} input[name='favorite_color']").blur();
     JS
-    sleep 0.5
+    wait_for_ajax
     expect(page).to have_css("##{id} input[type='submit']")
 
     visit user_path(@user)
@@ -406,10 +406,10 @@ describe "JS behaviour", :js => true do
     expect(find('#favorite_color')).to have_content('Red')
 
     id = BestInPlace::Utils.build_best_in_place_id @user, :favorite_color
-    find(("##{id}")).trigger('click')
+    find("##{id}").click
     expect(page).to have_no_css("##{id} input[type='submit']")
     find("##{id} input[name='favorite_color']").set 'Blue'
-    sleep 1
+    expect(page).to have_field('favorite_color', with: 'Blue')
     execute_script("$('##{id} input[name=\"favorite_color\"]').blur()")
     wait_for_ajax
 
@@ -427,7 +427,7 @@ describe "JS behaviour", :js => true do
     expect(find('#favorite_books')).to have_content('The City of Gold and Lead')
 
     id = BestInPlace::Utils.build_best_in_place_id @user, :favorite_books
-    find("##{id}").trigger('click')
+    find("##{id}").click
     find("##{id} textarea").set('1Q84')
     find("##{id} input[type='submit']").click
     wait_for_ajax
@@ -477,12 +477,13 @@ describe "JS behaviour", :js => true do
     expect(find('#favorite_books')).to have_content('The City of Gold and Lead')
 
     id = BestInPlace::Utils.build_best_in_place_id @user, :favorite_books
-    find("##{id}").trigger 'click'
+    find("##{id}").click
     expect(page).to have_no_css("##{id} input[type='submit']")
     find("##{id} textarea").set '1Q84'
-    sleep 1
+    expect(page).to have_field('favorite_books', with: '1Q84')
     execute_script("$('##{id} textarea').blur()")
-    wait_for_ajax
+    expect(page).to have_no_css("##{id} textarea")
+    expect(find('#favorite_books')).to have_content('1Q84')
 
     visit user_path(@user)
 
@@ -576,43 +577,34 @@ describe "JS behaviour", :js => true do
 
     it 'should display the original content when editing the form' do
       @user.save!
-      retry_on_timeout do
-        visit user_path(@user)
+      visit user_path(@user)
 
-        id = BestInPlace::Utils.build_best_in_place_id @user, :address
-        find("##{id}").click
+      id = BestInPlace::Utils.build_best_in_place_id @user, :address
+      find("##{id}").click
 
-        text = find("##{id} input").value
-        expect(text).to eq('Via Roma 99')
-      end
+      expect(page).to have_field('address', with: 'Via Roma 99')
     end
 
     it "should display the updated content after editing the field two consecutive times" do
       @user.save!
-      retry_on_timeout do
-        visit user_path(@user)
+      visit user_path(@user)
 
-        bip_text @user, :address, "New address"
+      bip_text @user, :address, "New address"
 
-        id = BestInPlace::Utils.build_best_in_place_id @user, :address
-        find("##{id}").click
-        wait_for_ajax
+      id = BestInPlace::Utils.build_best_in_place_id @user, :address
+      find("##{id}").click
 
-        expect(find("##{id} input").value).to eq('New address')
-      end
+      expect(page).to have_field('address', with: 'New address')
     end
 
     it "should quote properly the data-original-content attribute" do
       @user.address = "A's & B's"
       @user.save!
 
-      retry_on_timeout do
-        visit user_path(@user)
-        id = BestInPlace::Utils.build_best_in_place_id @user, :address
+      visit user_path(@user)
+      id = BestInPlace::Utils.build_best_in_place_id @user, :address
 
-        text = find("##{id}")['data-bip-original-content']
-        expect(text).to eq("A's & B's")
-      end
+      expect(page).to have_css("##{id}[data-bip-original-content=\"A's & B's\"]")
     end
   end
 
@@ -675,32 +667,25 @@ describe "JS behaviour", :js => true do
 
     it "should display the original content when editing the form" do
       @user.save!
-      retry_on_timeout do
-        visit user_path(@user)
+      visit user_path(@user)
 
-        id = BestInPlace::Utils.build_best_in_place_id @user, :money
-        find("##{id}").click
+      id = BestInPlace::Utils.build_best_in_place_id @user, :money
+      find("##{id}").click
 
-        text = find("##{id} input").value
-        expect(text).to eq("100.0")
-      end
+      expect(page).to have_field('money', with: '100.0')
     end
 
     it "should display the updated content after editing the field two consecutive times" do
       @user.save!
 
-      retry_on_timeout do
-        visit user_path(@user)
+      visit user_path(@user)
 
-        bip_text @user, :money, "40"
+      bip_text @user, :money, "40"
 
-        id = BestInPlace::Utils.build_best_in_place_id @user, :money
-        find("##{id}").click
-        wait_for_ajax
+      id = BestInPlace::Utils.build_best_in_place_id @user, :money
+      find("##{id}").click
 
-        text = find("##{id} input").value
-        expect(text).to eq("40")
-      end
+      expect(page).to have_field('money', with: '40')
     end
 
     it "should show the money in euros" do
@@ -724,6 +709,7 @@ describe "JS behaviour", :js => true do
       id = BestInPlace::Utils.build_best_in_place_id @user, :name
       find("#edit_#{@user.id}").click
       find("##{id} input[name='name']").set('Maria Lucia')
+      find("##{id} input[name='name']").send_keys(:enter)
       within("tr#user_#{@user.id} > .name > span") do
         expect(page).to have_content('Maria Lucia')
         expect(page).to have_xpath("//a[contains(@href,'#{user_path(@user)}')]")
@@ -765,30 +751,24 @@ describe "JS behaviour", :js => true do
 
       it "should display the original content when editing the form" do
         @user.save!
-        retry_on_timeout do
-          visit user_path(@user)
+        visit user_path(@user)
 
-          id = BestInPlace::Utils.build_best_in_place_id @user, :money_proc
-          find("##{id}").click
+        id = BestInPlace::Utils.build_best_in_place_id @user, :money_proc
+        find("##{id}").click
 
-          text = find("##{id} input").value
-          expect(text).to eq("100.0")
-        end
+        expect(page).to have_field('money_proc', with: '100.0')
       end
 
       it "should display the updated content after editing the field two consecutive times" do
         @user.save!
 
-        retry_on_timeout do
-          visit user_path(@user)
-          bip_text @user, :money_proc, "40"
+        visit user_path(@user)
+        bip_text @user, :money_proc, "40"
 
-          id = BestInPlace::Utils.build_best_in_place_id @user, :money_proc
-          find("##{id}").click
-          wait_for_ajax
+        id = BestInPlace::Utils.build_best_in_place_id @user, :money_proc
+        find("##{id}").click
 
-          expect(find("##{id} input").value).to eq('40')
-        end
+        expect(page).to have_field('money_proc', with: '40')
       end
 
     end
@@ -816,76 +796,67 @@ describe "JS behaviour", :js => true do
     @user.last_name = "A last name \"with double quotes\""
     @user.save!
 
-    retry_on_timeout do
-      visit user_path(@user)
+    visit user_path(@user)
 
-      id = BestInPlace::Utils.build_best_in_place_id @user, :last_name
-      find("##{id}").click
+    id = BestInPlace::Utils.build_best_in_place_id @user, :last_name
+    find("##{id}").click
 
-      expect(find("##{id} input").value).to eq("A last name \"with double quotes\"")
-    end
+    expect(page).to have_field('last_name', with: "A last name \"with double quotes\"")
   end
 
   it 'should texts with quotes with raw => true' do
     @user.save!
 
-    retry_on_timeout do
-      visit double_init_user_path(@user)
+    visit double_init_user_path(@user)
 
-      bip_area @user, :description, "A <a href=\"http://google.es\">link in this text</a> not sanitized."
+    bip_area @user, :description, "A <a href=\"http://google.es\">link in this text</a> not sanitized."
 
-      expect(page).to have_link("link in this text", :href => "http://google.es")
+    expect(page).to have_link("link in this text", :href => "http://google.es")
 
-      visit double_init_user_path(@user)
+    visit double_init_user_path(@user)
 
-      expect(page).to have_link("link in this text", :href => "http://google.es")
-    end
+    expect(page).to have_link("link in this text", :href => "http://google.es")
   end
 
   it "should show the input with not-scaped ampersands with raw => true" do
     @user.description = "A text with an & and a <b>Raw html</b>"
     @user.save!
 
-    retry_on_timeout do
-      visit double_init_user_path(@user)
+    visit double_init_user_path(@user)
 
-      id = BestInPlace::Utils.build_best_in_place_id @user, :description
-      find("##{id}").click
+    id = BestInPlace::Utils.build_best_in_place_id @user, :description
+    find("##{id}").click
 
-      text = find("##{id} textarea").value
-      expect(text).to eq("A text with an & and a <b>Raw html</b>")
-    end
+    expect(page).to have_field('description', with: "A text with an & and a <b>Raw html</b>")
   end
 
   it "should keep the same value after multipe edits" do
     @user.save!
 
-    retry_on_timeout do
-      visit double_init_user_path(@user)
+    visit double_init_user_path(@user)
 
-      bip_area @user, :description, "A <a href=\"http://google.es\">link in this text</a> not sanitized."
-      visit double_init_user_path(@user)
+    bip_area @user, :description, "A <a href=\"http://google.es\">link in this text</a> not sanitized."
+    visit double_init_user_path(@user)
 
-      expect(page).to have_link("link in this text", :href => "http://google.es")
+    expect(page).to have_link("link in this text", :href => "http://google.es")
 
-      id = BestInPlace::Utils.build_best_in_place_id @user, :description
-      find("##{id}").click
+    id = BestInPlace::Utils.build_best_in_place_id @user, :description
+    find("##{id}").click
 
-      expect(find("##{id} textarea").value).to eq("A <a href=\"http://google.es\">link in this text</a> not sanitized.")
-    end
+    expect(page).to have_field('description', with: "A <a href=\"http://google.es\">link in this text</a> not sanitized.")
   end
 
   it "should display single- and double-quotes in values appropriately" do
     @user.height = %{5' 6"}
     @user.save!
 
-    retry_on_timeout do
-      visit user_path(@user)
+    visit user_path(@user)
 
-      id = BestInPlace::Utils.build_best_in_place_id @user, :height
-      find("##{id}").click
+    id = BestInPlace::Utils.build_best_in_place_id @user, :height
+    find("##{id}").click
 
-      expect(find("##{id} select").value).to eq(%{5' 6"})
+    within("##{id}") do
+      expect(page).to have_select(selected: %{5' 6"})
     end
   end
 
@@ -893,64 +864,59 @@ describe "JS behaviour", :js => true do
     @user.height = %{5' 10"}
     @user.save!
 
-    retry_on_timeout do
-      visit user_path(@user)
+    visit user_path(@user)
 
-      id = BestInPlace::Utils.build_best_in_place_id @user, :height
-      find("##{id}").click
-      execute_script <<-JS
-        $("##{id} select").val("5' 7\\\"");
-        $("##{id} select").blur();
-      JS
-      wait_for_ajax
-
-      @user.reload
-      expect(@user.height).to eq(%{5' 7"})
+    id = BestInPlace::Utils.build_best_in_place_id @user, :height
+    find("##{id}").click
+    within("##{id}") do
+      expect(page).to have_select(selected: %{5' 10"})
     end
+    execute_script <<-JS
+      $("##{id} select").val("5' 7\\\"");
+      $("##{id} select").blur();
+    JS
+    wait_for_ajax
+
+    @user.reload
+    expect(@user.height).to eq(%{5' 7"})
   end
 
   it "should escape javascript in test helpers" do
     @user.save!
 
-    retry_on_timeout do
-      visit user_path(@user)
+    visit user_path(@user)
 
-      bip_text @user, :last_name, "Other '); alert('hi');"
+    bip_text @user, :last_name, "Other '); alert('hi');"
 
-      @user.reload
-      expect(@user.last_name).to eq("Other '); alert('hi');")
-    end
+    @user.reload
+    expect(@user.last_name).to eq("Other '); alert('hi');")
   end
 
   it "should save text in database without encoding" do
     @user.save!
 
-    retry_on_timeout do
-      visit user_path(@user)
+    visit user_path(@user)
 
-      bip_text @user, :last_name, "Other \"thing\""
+    bip_text @user, :last_name, "Other \"thing\""
 
-      @user.reload
-      expect(@user.last_name).to eq("Other \"thing\"")
-    end
+    @user.reload
+    expect(@user.last_name).to eq("Other \"thing\"")
   end
 
   it "should not strip html tags" do
     @user.save!
 
-    retry_on_timeout do
-      visit user_path(@user)
+    visit user_path(@user)
 
-      bip_text @user, :last_name, "<script>alert('hi');</script>"
-      expect(find('#last_name')).to have_content("<script>alert('hi');</script>")
+    bip_text @user, :last_name, "<script>alert('hi');</script>"
+    expect(find('#last_name')).to have_content("<script>alert('hi');</script>")
 
-      visit user_path(@user)
+    visit user_path(@user)
 
-      id = BestInPlace::Utils.build_best_in_place_id @user, :last_name
-      find("##{id}").click
+    id = BestInPlace::Utils.build_best_in_place_id @user, :last_name
+    find("##{id}").click
 
-      expect(find("##{id} input").value).to eq("<script>alert('hi');</script>")
-    end
+    expect(page).to have_field('last_name', with: "<script>alert('hi');</script>")
   end
 
   it "should generate the select html with the proper current option selected" do
