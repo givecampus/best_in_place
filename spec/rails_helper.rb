@@ -25,7 +25,6 @@ end
 
 require 'rspec/rails'
 require 'capybara/rails'
-
 require 'best_in_place/test_helpers'
 
 RSpec.configure do |config|
