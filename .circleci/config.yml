@@ -1,0 +1,45 @@
+version: 2.1
+
+jobs:
+  test:
+    docker:
+      - image: cimg/ruby:3.3-browsers
+    resource_class: small
+    environment:
+      RAILS_ENV: test
+      BUNDLE_PATH: vendor/bundle
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - v2-bundle-{{ arch }}-{{ checksum "Gemfile" }}-{{ checksum "Appraisals" }}-{{ checksum "best_in_place.gemspec" }}
+      - run:
+          name: Install dependencies
+          command: |
+            bundle install --jobs=4 --retry=3
+            bundle exec appraisal install
+      - save_cache:
+          key: v2-bundle-{{ arch }}-{{ checksum "Gemfile" }}-{{ checksum "Appraisals" }}-{{ checksum "best_in_place.gemspec" }}
+          paths:
+            - vendor/bundle
+      - run:
+          name: Run specs with coverage
+          command: |
+            mkdir -p tmp/test-results
+            bundle exec appraisal rspec
+      - store_test_results:
+          path: tmp/test-results
+      - store_artifacts:
+          path: coverage
+          destination: coverage
+      - store_artifacts:
+          path: spec/internal/log
+          destination: logs
+      - store_artifacts:
+          path: tmp/screenshots
+          destination: screenshots
+
+workflows:
+  test:
+    jobs:
+      - test

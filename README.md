@@ -304,85 +304,6 @@ And in your javascript:
 $('.best_in_place').bind("ajax:success", function(){ alert('Name updated for '+$(this).data('userName')); });
 ```
 
-## Non Active Record environments
-We are not planning to support other ORMs apart from Active Record, at least for now. So, you can perfectly consider the following workaround as *the right way* until a specific implementation is done for your ORM.
-
-Best In Place automatically assumes that Active Record is the ORM you are using. However, this might not be your case, as you might use another ORM (or not ORM at all for that case!). Good news for you: even in such situation Best In Place can be used!
-
-Let's setup an example so we can illustrate how to use Best In Place too in a non-ORM case. Imagine you have an awesome ice cream shop, and you have a model representing a single type of ice cream. The IceCream model has a name, a description, a... nevermind. The thing is that it also has a stock, which is a combination of flavour and size. A big chocolate ice cream (yummy!), a small paella ice cream (...really?), and so on. Shall we see some code?
-
-```ruby
-class IceCream < ActiveRecord::Base
-  serialize :stock, Hash
-
-  # consider the get_stock and set_stock methods are already defined
-end
-```
-
-Imagine we want to have a grid showing all the combinations of flavour and size and, for each combination, an editable stock. Since the stock for a flavour and a size is not a single and complete model attribute, we cannot use Best In Place *directly*. But we can set it up with an easy workaround.
-
-In the view, we'd do:
-
-```slim
-// @ice_cream is already available
-- flavours = ... // get them somewhere
-- sizes = ... // get them somewhere
-table
-  tr
-    - flavours.each do |flavour|
-      th= flavour
-  - sizes.each do |size|
-    tr
-      th= size
-      - flavours.each do |flavour|
-        - v = @ice_cream.get_stock(flavour: flavour, size: size)
-        td= best_in_place v, :to_i, as: :input, url: set_stock_ice_cream_path(flavour: flavour, size: size)
-```
-
-Now we need a route to which send the stock updates:
-
-```ruby
-TheAwesomeIceCreamShop::Application.routes.draw do
-  ...
-
-  resources :ice_creams, :only => :none do
-    member do
-      put :set_stock
-    end
-  end
-
-  ...
-end
-```
-
-And finally we need a controller:
-
-```ruby
-class IceCreamsController < ApplicationController::Base
-  respond_to :html, :json
-
-  ...
-
-  def set_stock
-    flavour = params[:flavour]
-    size = params[:size]
-    new_stock = (params["fixnum"] || {})["to_i"]
-
-    @ice_cream.set_stock(new_stock, { :flavour => flavour, :size => size })
-    if @ice_cream.save
-      head :ok
-    else
-      render :json => @ice_cream.errors.full_messages, :status => :unprocessable_entity
-    end
-  end
-
-  ...
-
-end
-```
-
-And this is how it is done!
-
 ## Configuration
 
 You can configure some global options for best_in_place. Currently these options are available:
@@ -435,10 +356,60 @@ Fork the project on [github](https://github.com/bernat/best_in_place 'bernat / b
 
 ### Run the specs
 
-    $ appraisal
-    $ appraisal rspec
+Use Ruby 3.3 or newer and install Google Chrome for the JavaScript specs.
+The appraisal matrix covers Rails 8.0 and 8.1, constrained to patch releases
+within each minor version. The gem's Rails dependencies are bounded to
+`>= 8.0, < 8.2`; supporting a newer minor requires explicitly updating the
+gemspec and test matrix.
 
-You many need to install appraisal: `gem install appraisal`
+  $ bundle install
+  $ bundle exec appraisal generate
+  $ bundle exec appraisal install
+  $ bundle exec appraisal rspec
+
+To run one Rails version:
+
+  $ bundle exec appraisal rails-8.0 rspec
+
+### Managed Chrome troubleshooting
+
+On managed computers, Chrome policies such as `BrowserSignin=2` (forced
+sign-in) can prevent Selenium's temporary browser profile from opening a page.
+Symptoms include a profile picker, `session not created`, or
+`unable to discover open pages` before any browser assertions run. These errors
+can have other causes too; check the Chrome policies at `chrome://policy`.
+
+Use a separate Chrome for Testing browser through Selenium Manager:
+
+```sh
+SE_FORCE_BROWSER_DOWNLOAD=true SE_BROWSER_VERSION=stable \
+  bundle exec appraisal rspec
+```
+
+Selenium downloads Chrome for Testing and a matching driver, then caches them
+under `~/.cache/selenium`. The initial download requires internet access.
+This command does not change enterprise policies or reuse your personal Chrome
+profile. If your organization restricts test browsers or downloads, ask your
+administrator for an approved setup.
+
+### Coverage and CI
+
+SimpleCov runs before Rails and the gem load, measures Ruby line and branch
+coverage, and includes unloaded files under `lib`. Open `coverage/index.html`
+after a spec run. CircleCI uses a single job to install all appraisals and run
+`bundle exec appraisal rspec` with headless Chrome. It uploads coverage reports,
+separate JUnit results for each appraisal, Rails logs, and browser failure
+screenshots under `tmp/screenshots`. Focused examples do not restrict the suite
+in CI. Test data is cleared before each example; browser assertions wait for
+observable state instead of retrying whole examples.
+
+The coverage review added direct specs for controller success/error responses,
+custom parameter names, display renderers, and model identity utilities.
+Remaining gaps include the configuration delegation API, AJAX timeout/error
+paths in test helpers, and some helper option combinations. Existing browser
+specs exercise the JavaScript, but SimpleCov measures only Ruby; JavaScript
+line/branch coverage would require separate instrumentation. No minimum
+coverage gate is set until a passing full-suite baseline is established.
 
 ---
 

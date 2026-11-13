@@ -2,6 +2,7 @@
 .bundle
 .idea
 pkg/*
+vendor/bundle/
 
 *.lock
 spec/internal/.bundle
